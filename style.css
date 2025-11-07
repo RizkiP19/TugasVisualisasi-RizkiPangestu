@@ -1,0 +1,48 @@
+/* Pengaturan Dasar (dari sebelumnya) */
+body {
+    font-size: .875rem;
+}
+.bg-light {
+    background-color: #f8f9fa!important;
+}
+
+/* Score Cards (dari sebelumnya) */
+.score-card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+.score-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+}
+.score-card h5 {
+    color: #6c757d;
+    font-weight: 600;
+}
+.score-card h2 {
+    color: #004a99;
+    font-weight: 700;
+}
+
+/* ===============================================
+== TAMBAHAN BARU UNTUK MENGATUR TINGGI GRAFIK ==
+===============================================
+*/
+
+/* Wadah untuk Chart.js */
+.chart-container {
+  position: relative;
+  /* Atur tinggi yang Anda inginkan di sini */
+  height: 400px; 
+  width: 100%;
+}
+
+/* Wadah untuk Tabel */
+.table-container {
+  /* Atur tinggi yang sama agar seragam */
+  height: 400px; 
+  /* Ini akan membuat tabel bisa di-scroll secara vertikal */
+  overflow-y: auto; 
+}
