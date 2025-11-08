@@ -1,36 +1,11 @@
-/**
- * =========================================================================
- * SCRIPT.JS (VERSI INTERAKTIF)
- * =========================================================================
- * * LOGIKA BARU:
- * 1. Definisikan variabel global untuk data mentah dan instance chart.
- * 2. Buat fungsi `updateDashboard()` yang akan dipanggil setiap ada perubahan.
- * 3. `loadAndProcessData()` sekarang hanya berjalan sekali untuk inisialisasi.
- */
-
-// -------------------------------------------------------------------------
-// Variabel Global
-// -------------------------------------------------------------------------
-
-// Kita akan simpan 52.000+ baris data di sini agar bisa difilter
 let fullMasterData = []; 
-
-// Kita simpan instance chart di sini agar bisa di-destroy
 let chartInstances = {};
 
-// -------------------------------------------------------------------------
-// Inisialisasi
-// -------------------------------------------------------------------------
-
-// Menunggu semua konten HTML dimuat sebelum menjalankan skrip
 document.addEventListener('DOMContentLoaded', () => {
-    // Memulai proses memuat semua data (hanya sekali)
     loadAndProcessData();
 });
 
-/**
- * Fungsi pembantu untuk memuat file CSV (menggunakan PapaParse).
- */
+// Fungsi pembantu untuk memuat file CSV
 async function fetchData(url) {
     const response = await fetch(url);
     const csvText = await response.text();
@@ -44,28 +19,25 @@ async function fetchData(url) {
     });
 }
 
-/**
- * Fungsi utama untuk memuat satu file CSV besar.
- * Sekarang hanya untuk inisialisasi, mengisi filter, dan trigger update pertama.
- */
+// Fungsi utama untuk memuat satu file CSV besar
 async function loadAndProcessData() {
     console.log("Memuat file master_sales_data.csv...");
     try {
-        // 1. HANYA MEMUAT SATU FILE MASTER
+        // MEMUAT SATU FILE MASTER
         const allData = await fetchData('master_sales_data.csv');
-        fullMasterData = allData; // Simpan ke variabel global
+        fullMasterData = allData;
         console.log(`Berhasil memuat ${fullMasterData.length} baris data.`);
 
-        // 2. PROSES DATA SEKALI HANYA UNTUK MENGISI FILTER
+        // PROSES DATA SEKALI UNTUK MENGISI FILTER
         const initialProcessedData = processDataInBrowser(fullMasterData);
         fillFilters(initialProcessedData.filterData);
         console.log("Filter telah diisi.");
         
-        // 3. GAMBAR DASHBOARD PERTAMA KALI (dengan semua data)
+        // GAMBAR DASHBOARD PERTAMA KALI
         updateDashboard();
         console.log("Dashboard awal berhasil dimuat.");
 
-        // 4. PASANG EVENT LISTENER PADA FILTER
+        // PASANG EVENT LISTENER PADA FILTER
         document.getElementById('filter-location').addEventListener('change', updateDashboard);
         document.getElementById('filter-product').addEventListener('change', updateDashboard);
         document.getElementById('filter-month').addEventListener('change', updateDashboard);
@@ -76,25 +48,16 @@ async function loadAndProcessData() {
     }
 }
 
-// -------------------------------------------------------------------------
-// Fungsi Inti Update
-// -------------------------------------------------------------------------
-
-/**
- * Fungsi "mesin" utama. Dipanggil setiap kali filter berubah.
- */
 function updateDashboard() {
     console.log("Memperbarui dashboard...");
 
-    // 1. Baca nilai filter saat ini
+    // Baca nilai filter saat ini
     const selectedLocation = document.getElementById('filter-location').value;
     const selectedProduct = document.getElementById('filter-product').value;
     const selectedMonth = document.getElementById('filter-month').value;
 
-    // 2. Saring (Filter) data master
-    // Ini akan mengambil 52.000+ baris dan menyaringnya
+    // Saring (Filter) data master
     const filteredData = fullMasterData.filter(row => {
-        // Cek setiap kondisi. Jika filter "Semua" (default), maka lolos (true).
         const matchLocation = (selectedLocation === 'Filter berdasarkan Lokasi') || (row.Location === selectedLocation);
         const matchProduct = (selectedProduct === 'Filter berdasarkan Produk') || (row.Product_Category === selectedProduct);
         const matchMonth = (selectedMonth === 'Filter berdasarkan Bulan') || (row.Month === selectedMonth);
@@ -103,16 +66,16 @@ function updateDashboard() {
     });
     console.log(`Data difilter: ${filteredData.length} baris`);
 
-    // 3. Proses data yang sudah difilter
+    // Proses data yang sudah difilter
     const processedData = processDataInBrowser(filteredData);
     
-    // 4. Isi ulang semua komponen dengan data baru
+    // Isi ulang semua komponen dengan data baru
     fillScoreCards(processedData.scoreData);
     
     // Hancurkan & gambar ulang semua chart
     createChart1_Combo(processedData.chart1Data);
     createChart2_BarMonth(processedData.chart2Data);
-    createChart3_TreemapPlaceholder(processedData.chart3Data); // Google Chart
+    createChart3_TreemapPlaceholder(processedData.chart3Data);
     createChart4_GroupedBar(processedData.chart4Data);
     createChart5_PieGender(processedData.chart5Data);
     
@@ -123,15 +86,7 @@ function updateDashboard() {
     console.log("Dashboard berhasil diperbarui.");
 }
 
-
-// -------------------------------------------------------------------------
-// Fungsi Pemrosesan Data (SAMA SEPERTI SEBELUMNYA)
-// -------------------------------------------------------------------------
-
-/**
- * Fungsi ini mengambil data (penuh atau terfilter)
- * dan mengubahnya menjadi 9 set data yang siap untuk divisualisasikan.
- */
+// Fungsi Pemrosesan Data
 function processDataInBrowser(allData) {
     let total_revenue = 0;
     let total_quantity = 0;
@@ -143,7 +98,7 @@ function processDataInBrowser(allData) {
     
     const categoryAgg = {};
     const monthAgg = {};
-    const locationCategoryAgg = {}; // Ini akan diubah
+    const locationCategoryAgg = {};
     const locationGenderAgg = {};
     const genderAgg = {};
     const taxAgg = {};
@@ -172,15 +127,11 @@ function processDataInBrowser(allData) {
         if (!monthAgg[mon]) monthAgg[mon] = 0;
         monthAgg[mon] += row.Quantity || 0;
         
-        // --- PERUBAHAN CHART 3 DIMULAI DI SINI ---
         const treemapKey = `${loc}|${cat}`;
         if (!locationCategoryAgg[treemapKey]) {
-            // Ubah dari 'Total_Revenue' menjadi 'Customers'
             locationCategoryAgg[treemapKey] = { Location: loc, Product_Category: cat, Customers: new Set() }; 
         }
-        // Tambahkan ID customer ke Set (Set otomatis menangani duplikat)
         locationCategoryAgg[treemapKey].Customers.add(row.CustomerID);
-        // --- PERUBAHAN CHART 3 SELESAI ---
 
         if (!locationGenderAgg[loc]) locationGenderAgg[loc] = { F: new Set(), M: new Set() };
         if (gen === 'F') locationGenderAgg[loc].F.add(row.CustomerID);
@@ -203,7 +154,7 @@ function processDataInBrowser(allData) {
         }
     }
 
-    // --- FINALISASI DATA ---
+    // FINALISASI DATA
     const scoreData = {
         total_revenue: total_revenue,
         total_quantity: total_quantity,
@@ -228,13 +179,11 @@ function processDataInBrowser(allData) {
     }));
 
     // --- PERUBAHAN FINALISASI CHART 3 ---
-    // Ubah data 'Customers: Set()' menjadi 'Total_Customers: 5' (angka)
     const chart3Data = Object.values(locationCategoryAgg).map(d => ({
         Location: d.Location,
         Product_Category: d.Product_Category,
-        Total_Customers: d.Customers.size // Ambil jumlah unik dari Set
-    })).filter(d => d.Total_Customers > 0); // Filter yang 0
-    // --- PERUBAHAN SELESAI ---
+        Total_Customers: d.Customers.size
+    })).filter(d => d.Total_Customers > 0);
 
     const chart4Data = Object.keys(locationGenderAgg).map(loc => ({
         Location: loc,
@@ -267,18 +216,10 @@ function processDataInBrowser(allData) {
     };
 }
 
-
-// =-------------------------------------------------------------------------
-// Fungsi UI & Chart (Semua dimodifikasi untuk di-destroy)
-// -------------------------------------------------------------------------
-
+// Fungsi UI & Chart
 function fillScoreCards(data) {
     
-    // FUNGSI FORMAT BARU:
-    // Format angka dengan pemisah ribuan (misal: 4.670.795)
-    
     const formatRevenue = (num) => {
-        // Format sebagai Dolar (sesuai format asli $), tanpa desimal
         return num.toLocaleString('en-US', { 
             style: 'currency', 
             currency: 'USD', 
@@ -288,18 +229,14 @@ function fillScoreCards(data) {
     };
     
     const formatNumber = (num) => {
-        // Format sebagai angka biasa dengan pemisah ribuan (misal: 238.033)
         return num.toLocaleString('id-ID');
     };
 
-    // Terapkan format baru
     document.getElementById('score-revenue').textContent = formatRevenue(data.total_revenue);
     document.getElementById('score-quantity').textContent = formatNumber(data.total_quantity);
     document.getElementById('score-customers').textContent = formatNumber(data.total_customers);
 }
-/**
- * Pengisian filter. Hanya dipanggil sekali saat load.
- */
+
 function fillFilters(data) {
     const locFilter = document.getElementById('filter-location');
     data.locations.forEach(loc => {
@@ -317,11 +254,8 @@ function fillFilters(data) {
     });
 }
 
-/**
- * Fungsi Chart.js (ditambah .destroy())
- */
+// Fungsi Chart.js
 function createChart1_Combo(data) {
-    // HANCURKAN CHART LAMA (jika ada)
     if (chartInstances['chart1']) {
         chartInstances['chart1'].destroy();
     }
@@ -332,7 +266,6 @@ function createChart1_Combo(data) {
     const quantity = topData.map(row => row.Total_Quantity);
 
     const ctx = document.getElementById('chart1_combo').getContext('2d');
-    // SIMPAN INSTANCE CHART BARU
     chartInstances['chart1'] = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -410,24 +343,15 @@ function createChart2_BarMonth(data) {
     });
 }
 
-/**
- * Fungsi Google Chart (Treemap)
- * --- DIPERBARUI: Mengubah skema warna menjadi BIRU ---
- */
+// Fungsi Google Chart (Treemap)
 function createChart3_TreemapPlaceholder(data) {
-    // data = chart3Data (isinya: [{ Location, Product_Category, Total_Customers }, ...])
-    
-    // Kosongkan <div> agar chart lama hilang
     document.getElementById('chart3_treemap_placeholder').innerHTML = "";
-    
-    // Jika tidak ada data setelah difilter, jangan gambar
     if (data.length === 0) return;
 
     google.charts.load('current', {'packages':['treemap']});
     google.charts.setOnLoadCallback(drawChart);
 
     function drawChart() {
-        // Konversi data Anda ke format yang dimengerti Google Charts
         const dataForGoogle = [
             ['ID', 'Parent', 'Customers (Size)'],
             ['Global', null, 0] 
@@ -438,7 +362,6 @@ function createChart3_TreemapPlaceholder(data) {
             dataForGoogle.push([loc, 'Global', 0]);
         });
 
-        // Tambahkan data anak (Kategori Produk)
         data.forEach(row => {
             if (row.Total_Customers > 0) {
                 dataForGoogle.push([
@@ -456,15 +379,13 @@ function createChart3_TreemapPlaceholder(data) {
         chart.draw(dataTable, {
             title: 'Hirarki Jumlah Pelanggan (Lokasi & Kategori)',
             
-            // --- PERUBAHAN WARNA DI SINI ---
-            minColor: '#E6F0FF', // Warna biru paling muda (untuk nilai rendah)
-            midColor: '#5A9BD4', // Warna biru tengah
-            maxColor: '#004A99', // Warna biru paling tua (untuk nilai tinggi)
-            // --- AKHIR PERUBAHAN ---
+            minColor: '#E6F0FF',
+            midColor: '#5A9BD4',
+            maxColor: '#004A99',
 
             headerHeight: 20,
             fontColor: 'black',
-            showScale: true // Tampilkan skala gradien warna
+            showScale: true
         });
     }
 }
@@ -527,8 +448,8 @@ function createChart5_PieGender(data) {
                 label: 'Jumlah Pelanggan',
                 data: customers,
                 backgroundColor: [
-                    'rgba(255, 81, 0, 0.94)',  // Wanita
-                    'rgba(0, 122, 198, 0.9)' // Pria
+                    'rgba(255, 81, 0, 0.94)',
+                    'rgba(0, 122, 198, 0.9)'
                 ]
             }]
         },
@@ -539,13 +460,10 @@ function createChart5_PieGender(data) {
     });
 }
 
-// -------------------------------------------------------------------------
-// Fungsi Tabel (Hanya isi ulang, tidak perlu di-destroy)
-// -------------------------------------------------------------------------
-
+// Fungsi Tabel
 function fillTable1_Tax(data) {
     const tbody = document.querySelector("#table1_tax tbody");
-    tbody.innerHTML = ""; // Kosongkan isi tabel
+    tbody.innerHTML = "";
     
     data.forEach(row => {
         if (row.Product_Category && row.GST) {
@@ -561,7 +479,7 @@ function fillTable1_Tax(data) {
 
 function fillTable2_Discount(data) {
     const tbody = document.querySelector("#table2_discount tbody");
-    tbody.innerHTML = ""; // Kosongkan isi tabel
+    tbody.innerHTML = "";
 
     const sampleData = data.slice(0, 50);
 
@@ -577,4 +495,5 @@ function fillTable2_Discount(data) {
             `;
         }
     });
+
 }
